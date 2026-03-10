@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { findDuplicateGroups } from '../utils/duplicates';
 
 // ─── 合併欄位定義 ─────────────────────────────────────────────────────────────
@@ -113,70 +113,6 @@ function GroupCard({ group, selected, status, onClick }) {
   );
 }
 
-// ─── 搜尋新增會員 ─────────────────────────────────────────────────────────────
-function AddMemberSearch({ allMembers, comparisonMembers, onAdd, onClose }) {
-  const [q, setQ] = useState('');
-  const inputRef = useRef(null);
-
-  useEffect(() => { inputRef.current?.focus(); }, []);
-
-  const results = allMembers.filter(m =>
-    !comparisonMembers.find(cm => cm.id === m.id) &&
-    (m.name.toLowerCase().includes(q.toLowerCase()) || m.phone.includes(q))
-  ).slice(0, 6);
-
-  return (
-    <div className="absolute right-0 top-full mt-1.5 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-50">
-      <div className="p-2 border-b border-gray-100">
-        <div className="flex items-center gap-2 px-2 py-1.5 bg-gray-50 rounded-lg">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="搜尋姓名或手機..."
-            value={q}
-            onChange={e => setQ(e.target.value)}
-            className="flex-1 text-sm bg-transparent focus:outline-none"
-          />
-          {q && (
-            <button onClick={() => setQ('')} className="text-gray-400 hover:text-gray-600">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="max-h-56 overflow-y-auto">
-        {q === '' ? (
-          <p className="px-4 py-4 text-xs text-gray-400 text-center">輸入姓名或手機搜尋會員</p>
-        ) : results.length === 0 ? (
-          <p className="px-4 py-4 text-xs text-gray-400 text-center">無符合結果</p>
-        ) : results.map(m => (
-          <button
-            key={m.id}
-            onClick={() => { onAdd(m); onClose(); }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 transition-colors text-left"
-          >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-blue-600 text-xs font-bold flex-shrink-0">
-              {m.name.charAt(0)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800 truncate">{m.name}</p>
-              <p className="text-xs text-gray-400">{m.phone} · {m.birthday}</p>
-            </div>
-          </button>
-        ))}
-      </div>
-      <div className="p-2 border-t border-gray-100">
-        <button onClick={onClose} className="w-full text-xs text-gray-400 py-1 hover:text-gray-600">取消</button>
-      </div>
-    </div>
-  );
-}
-
 // ─── 比對面板 ─────────────────────────────────────────────────────────────────
 function ComparisonPanel({ group, allMembers, onMerge, onSkip }) {
   const [compMembers, setCompMembers] = useState(group.members);
@@ -186,8 +122,7 @@ function ComparisonPanel({ group, allMembers, onMerge, onSkip }) {
     MERGE_FIELDS.filter(f => !f.readonly).forEach(f => { init[f.key] = group.members[0].id; });
     return init;
   });
-  const [showSearch, setShowSearch] = useState(false);
-  const searchRef = useRef(null);
+  const [addSearchQuery, setAddSearchQuery] = useState('');
 
   // 切換群組時重置
   useEffect(() => {
@@ -196,34 +131,44 @@ function ComparisonPanel({ group, allMembers, onMerge, onSkip }) {
     const init = {};
     MERGE_FIELDS.filter(f => !f.readonly).forEach(f => { init[f.key] = group.members[0].id; });
     setChoices(init);
-    setShowSearch(false);
+    setAddSearchQuery('');
   }, [group.id]);
 
-  // 點擊外部關閉搜尋
-  useEffect(() => {
-    if (!showSearch) return;
-    const handler = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSearch(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showSearch]);
+  // 新增比對會員的搜尋結果
+  const addSearchResults = addSearchQuery
+    ? allMembers.filter(m =>
+        !compMembers.find(cm => cm.id === m.id) &&
+        (m.name.toLowerCase().includes(addSearchQuery.toLowerCase()) || m.phone.includes(addSearchQuery))
+      ).slice(0, 5)
+    : [];
 
   function addMember(m) {
     setCompMembers(prev => [...prev, m]);
+    setAddSearchQuery('');
   }
 
   function removeMember(id) {
     const updated = compMembers.filter(m => m.id !== id);
     setCompMembers(updated);
-    if (primaryId === id) setPrimaryId(updated[0]?.id);
-    setChoices(prev => {
-      const next = { ...prev };
-      MERGE_FIELDS.filter(f => !f.readonly).forEach(f => {
-        if (next[f.key] === id) next[f.key] = updated[0]?.id;
+    if (primaryId === id) {
+      setPrimaryId(updated[0]?.id);
+      const newPrimary = updated[0]?.id;
+      setChoices(prev => {
+        const next = { ...prev };
+        MERGE_FIELDS.filter(f => !f.readonly).forEach(f => {
+          if (next[f.key] === id) next[f.key] = newPrimary;
+        });
+        return next;
       });
-      return next;
-    });
+    } else {
+      setChoices(prev => {
+        const next = { ...prev };
+        MERGE_FIELDS.filter(f => !f.readonly).forEach(f => {
+          if (next[f.key] === id) next[f.key] = updated[0]?.id;
+        });
+        return next;
+      });
+    }
   }
 
   return (
@@ -236,25 +181,12 @@ function ComparisonPanel({ group, allMembers, onMerge, onSkip }) {
             重複原因：<span className="text-amber-600 font-medium">{group.matchReasons.join('、')}相同</span>
           </p>
         </div>
-        <div className="relative" ref={searchRef}>
-          <button
-            onClick={() => setShowSearch(s => !s)}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            新增比對會員
-          </button>
-          {showSearch && (
-            <AddMemberSearch
-              allMembers={allMembers}
-              comparisonMembers={compMembers}
-              onAdd={addMember}
-              onClose={() => setShowSearch(false)}
-            />
-          )}
-        </div>
+        <p className="text-xs text-gray-400 flex items-center gap-1">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+          向右滑動可新增比對會員
+        </p>
       </div>
 
       {/* Table */}
@@ -284,7 +216,7 @@ function ComparisonPanel({ group, allMembers, onMerge, onSkip }) {
                           <p className="text-sm font-semibold text-gray-900 leading-tight">{member.name}</p>
                           <p className="text-xs text-gray-400 mt-0.5">{member.memberNumber}</p>
                         </div>
-                        {/* Primary radio */}
+                        {/* Primary radio — FIX: also sync choices.name */}
                         <label className={`flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-full border transition-all text-xs font-medium ${
                           primaryId === member.id
                             ? 'bg-blue-600 text-white border-blue-600'
@@ -295,7 +227,10 @@ function ComparisonPanel({ group, allMembers, onMerge, onSkip }) {
                             name="primaryMember"
                             value={member.id}
                             checked={primaryId === member.id}
-                            onChange={() => setPrimaryId(member.id)}
+                            onChange={() => {
+                              setPrimaryId(member.id);
+                              setChoices(prev => ({ ...prev, name: member.id }));
+                            }}
                             className="sr-only"
                           />
                           {primaryId === member.id ? '✓ 主要會員' : '設為主要'}
@@ -315,6 +250,71 @@ function ComparisonPanel({ group, allMembers, onMerge, onSkip }) {
                       </div>
                     </th>
                   ))}
+
+                  {/* ── Ghost column header: inline search to add member ── */}
+                  <th className="min-w-[180px] border-l-2 border-dashed border-gray-200 bg-gray-50/40 align-top">
+                    <div className="px-3 py-4 flex flex-col items-center gap-2">
+                      <div className="w-11 h-11 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-300">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                      </div>
+                      <p className="text-xs text-gray-400 font-medium">新增比對</p>
+                      {/* Inline search input */}
+                      <div className="w-full">
+                        <div className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus-within:ring-2 focus-within:ring-blue-400 transition-shadow">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                          </svg>
+                          <input
+                            type="text"
+                            placeholder="姓名或手機..."
+                            value={addSearchQuery}
+                            onChange={e => setAddSearchQuery(e.target.value)}
+                            onBlur={() => setTimeout(() => setAddSearchQuery(''), 200)}
+                            className="flex-1 text-xs bg-transparent focus:outline-none placeholder-gray-300 min-w-0"
+                          />
+                          {addSearchQuery && (
+                            <button
+                              onMouseDown={e => e.preventDefault()}
+                              onClick={() => setAddSearchQuery('')}
+                              className="text-gray-300 hover:text-gray-500 flex-shrink-0"
+                            >
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                        {/* Inline results */}
+                        {addSearchQuery && addSearchResults.length > 0 && (
+                          <div className="mt-1.5 border border-gray-100 rounded-lg overflow-hidden shadow-md bg-white">
+                            {addSearchResults.map(m => (
+                              <button
+                                key={m.id}
+                                onMouseDown={e => e.preventDefault()}
+                                onClick={() => addMember(m)}
+                                className="w-full flex items-center gap-2 px-2.5 py-2 hover:bg-blue-50 transition-colors text-left"
+                              >
+                                <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-[10px] font-bold flex-shrink-0">
+                                  {m.name.charAt(0)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-gray-800 truncate">{m.name}</p>
+                                  <p className="text-[10px] text-gray-400 truncate">{m.phone}</p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {addSearchQuery && addSearchResults.length === 0 && (
+                          <div className="mt-1.5 px-2 py-2 text-[10px] text-gray-400 text-center bg-white border border-gray-100 rounded-lg">
+                            無符合結果
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </th>
                 </tr>
               </thead>
 
@@ -379,6 +379,9 @@ function ComparisonPanel({ group, allMembers, onMerge, onSkip }) {
                         </td>
                       );
                     })}
+
+                    {/* Ghost td */}
+                    <td className="border-l-2 border-dashed border-gray-200 bg-gray-50/20" />
                   </tr>
                 ))}
               </tbody>
@@ -421,7 +424,8 @@ function ComparisonPanel({ group, allMembers, onMerge, onSkip }) {
 export default function MemberMerge({ members, onBack, onMerge }) {
   // Snapshot groups at mount time so resolved items remain visible in sidebar
   const [allGroups] = useState(() => findDuplicateGroups(members));
-  const [selectedGroupId, setSelectedGroupId] = useState(null);
+  // FIX: auto-select first group instead of showing empty state
+  const [selectedGroupId, setSelectedGroupId] = useState(() => allGroups[0]?.id ?? null);
   const [statuses, setStatuses] = useState({}); // groupId → 'merged' | 'skipped'
   const [toast, setToast] = useState(null);
 
@@ -439,9 +443,7 @@ export default function MemberMerge({ members, onBack, onMerge }) {
   }
 
   function handleMerge(primaryId, choices, compMembers) {
-    // Update parent state (removes merged members, updates primary)
     onMerge(primaryId, choices, compMembers);
-    // Mark as merged in local UI
     setStatuses(prev => ({ ...prev, [selectedGroupId]: 'merged' }));
     const count = compMembers.length;
     showToast(`✓ 已成功合併 ${count} 位會員`);
@@ -460,9 +462,9 @@ export default function MemberMerge({ members, onBack, onMerge }) {
 
   return (
     <div className="min-h-screen bg-[#f5f6fa] flex flex-col">
-      {/* Toast */}
+      {/* Toast — FIX: centered at top instead of top-right */}
       {toast && (
-        <div className={`fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl text-white text-sm font-medium transition-all ${
+        <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-5 py-3 rounded-xl shadow-xl text-white text-sm font-medium whitespace-nowrap transition-all ${
           toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
         }`}>
           {toast.msg}
