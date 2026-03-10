@@ -259,6 +259,19 @@ export default function MemberList({ members, onSelectMember, onGoMerge, onAddMe
               className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-white w-64 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
+          {/* Merge button — always visible entry point */}
+          <button
+            onClick={() => onGoMerge()}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+              <path d="M16 3.13a4 4 0 010 7.75"/>
+            </svg>
+            合併會員
+          </button>
           <div className="relative">
             <button
               onClick={() => setDropdownOpen(o => !o)}
@@ -330,6 +343,72 @@ export default function MemberList({ members, onSelectMember, onGoMerge, onAddMe
               查看並合併
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── Selection toolbar (floats at bottom when items are selected) ── */}
+      {selected.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-white border border-gray-200 rounded-2xl shadow-2xl px-2 py-2">
+          {/* Count chip */}
+          <div className="flex items-center gap-2 px-3 py-1.5">
+            <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center flex-shrink-0">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </div>
+            <span className="text-sm font-semibold text-gray-800 whitespace-nowrap">已選取</span>
+            <span className="text-sm text-gray-500 whitespace-nowrap">{selected.length} 項目</span>
+          </div>
+
+          <div className="w-px h-6 bg-gray-200 mx-1" />
+
+          {/* New tag */}
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm text-gray-600 hover:bg-gray-100 transition-colors whitespace-nowrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
+              <line x1="7" y1="7" x2="7.01" y2="7"/>
+            </svg>
+            新增標籤
+          </button>
+
+          {/* Send message */}
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm text-gray-600 hover:bg-gray-100 transition-colors whitespace-nowrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            發送單發訊息
+          </button>
+
+          {/* Merge — only shown when 2+ selected */}
+          {selected.length >= 2 && (
+            <>
+              <div className="w-px h-6 bg-gray-200 mx-1" />
+              <button
+                onClick={() => { onGoMerge(selected); setSelected([]); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 010 7.75"/>
+                </svg>
+                合併會員
+              </button>
+            </>
+          )}
+
+          <div className="w-px h-6 bg-gray-200 mx-1" />
+
+          {/* Cancel */}
+          <button
+            onClick={() => setSelected([])}
+            className="px-3 py-1.5 rounded-xl text-sm text-gray-500 hover:bg-gray-100 transition-colors whitespace-nowrap"
+          >
+            取消
+          </button>
         </div>
       )}
 

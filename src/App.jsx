@@ -16,6 +16,7 @@ function App() {
   const [view, setView] = useState('list'); // 'list' | 'detail' | 'merge'
   const [selectedMemberId, setSelectedMemberId] = useState(null);
   const [members, setMembers] = useState(initialMembers);
+  const [mergeInitialIds, setMergeInitialIds] = useState(null); // pre-selected IDs from list
 
   // Always derive the selected member from current state so edits reflect immediately
   const selectedMember = members.find(m => m.id === selectedMemberId) ?? null;
@@ -86,11 +87,18 @@ function App() {
 
   // ── Routing ──────────────────────────────────────────────────────────────────
 
+  // ids = array of member IDs to pre-load (optional, from multi-select)
+  function goMerge(ids = null) {
+    setMergeInitialIds(ids);
+    setView('merge');
+  }
+
   if (view === 'merge') {
     return (
       <MemberMerge
         members={members}
-        onBack={() => setView('list')}
+        initialMemberIds={mergeInitialIds}
+        onBack={() => { setMergeInitialIds(null); setView('list'); }}
         onMerge={mergeMembers}
       />
     );
@@ -111,7 +119,7 @@ function App() {
     <MemberList
       members={members}
       onSelectMember={(m) => { setSelectedMemberId(m.id); setView('detail'); }}
-      onGoMerge={() => setView('merge')}
+      onGoMerge={goMerge}
       onAddMember={addMember}
     />
   );

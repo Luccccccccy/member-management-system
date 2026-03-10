@@ -410,11 +410,43 @@ function ComparisonPanel({ group, allMembers, onMerge, onSkip }) {
 }
 
 // ─── 主頁面 ───────────────────────────────────────────────────────────────────
-export default function MemberMerge({ members, onBack, onMerge }) {
+export default function MemberMerge({ members, onBack, onMerge, initialMemberIds }) {
   // Snapshot groups at mount time so resolved items remain visible in sidebar
-  const [allGroups] = useState(() => findDuplicateGroups(members));
-  // FIX: auto-select first group instead of showing empty state
-  const [selectedGroupId, setSelectedGroupId] = useState(() => allGroups[0]?.id ?? null);
+  const [allGroups] = useState(() => {
+    const detected = findDuplicateGroups(members);
+    // If caller passed specific member IDs (from list multi-select), inject a manual group
+    if (initialMemberIds && initialMemberIds.length >= 2) {
+      const manualMembers = initialMemberIds
+        .map(id => members.find(m => m.id === id))
+        .filter(Boolean);
+      if (manualMembers.length >= 2) {
+        // Only inject if these members aren't already grouped together
+        const alreadyCovered = detected.some(g =>
+          manualMembers.every(m => g.members.some(gm => gm.id === m.id))
+        );
+        if (!alreadyCovered) {
+          const manualGroup = {
+            id: `manual-${[...initialMemberIds].sort().join('-')}`,
+            members: manualMembers,
+            matchReasons: ['手動選取'],
+          };
+          return [manualGroup, ...detected];
+        }
+      }
+    }
+    return detected;
+  });
+
+  // Auto-select first group; if initial IDs were passed, jump to their group
+  const [selectedGroupId, setSelectedGroupId] = useState(() => {
+    if (initialMemberIds && initialMemberIds.length >= 2) {
+      const group = allGroups.find(g =>
+        initialMemberIds.every(id => g.members.some(m => m.id === id))
+      );
+      if (group) return group.id;
+    }
+    return allGroups[0]?.id ?? null;
+  });
   const [statuses, setStatuses] = useState({}); // groupId → 'merged' | 'skipped'
   const [toast, setToast] = useState(null);
 
