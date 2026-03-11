@@ -387,7 +387,7 @@ export default function MemberList({ members, onSelectMember, onGoMerge, onAddMe
               <div className="w-px h-6 bg-gray-200 mx-1" />
               <button
                 onClick={() => { onGoMerge(selected); setSelected([]); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm text-gray-600 hover:bg-gray-100 transition-colors whitespace-nowrap"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
@@ -502,7 +502,7 @@ export default function MemberList({ members, onSelectMember, onGoMerge, onAddMe
                     <input
                       type="checkbox"
                       checked={selected.includes(member.id)}
-                      onChange={() => toggleSelect(member.id)}
+                      onChange={() => {}}
                       className="w-4 h-4 rounded border-gray-300 text-blue-600 accent-blue-600 cursor-pointer"
                     />
                   </td>

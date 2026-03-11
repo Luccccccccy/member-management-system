@@ -111,11 +111,10 @@ function DeleteConfirmModal({ memberName, onCancel, onConfirm }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function MemberDetail({ member, onBack, onUpdate, onDelete }) {
+export default function MemberDetail({ member, onBack, onUpdate, onDelete, onGoMerge }) {
   const [activeNav, setActiveNav] = useState('overview');
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState({ ...member });
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Sync editData when member prop changes (e.g. after save propagates back)
   useEffect(() => {
@@ -147,15 +146,6 @@ export default function MemberDetail({ member, onBack, onUpdate, onDelete }) {
 
   return (
     <div className="min-h-screen bg-[#f5f6fa]">
-      {/* Delete Confirmation */}
-      {showDeleteConfirm && (
-        <DeleteConfirmModal
-          memberName={member.name}
-          onCancel={() => setShowDeleteConfirm(false)}
-          onConfirm={() => onDelete(member.id)}
-        />
-      )}
-
       {/* Top bar */}
       <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -168,20 +158,20 @@ export default function MemberDetail({ member, onBack, onUpdate, onDelete }) {
               <polyline points="12 19 5 12 12 5" />
             </svg>
           </button>
-          <h1 className="text-lg font-bold text-gray-900">會員資訊</h1>
+          <h1 className="text-lg font-bold text-gray-900">會員資訊頁面</h1>
         </div>
-        {/* Delete button in top bar */}
+        {/* Merge button in top bar */}
         <button
-          onClick={() => setShowDeleteConfirm(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 border border-red-200 text-red-500 rounded-lg text-sm hover:bg-red-50 transition-colors"
+          onClick={() => onGoMerge([member.id])}
+          className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors"
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-            <path d="M10 11v6"/><path d="M14 11v6"/>
-            <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+            <path d="M16 3.13a4 4 0 010 7.75"/>
           </svg>
-          刪除會員
+          合併會員
         </button>
       </div>
 

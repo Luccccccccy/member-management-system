@@ -111,6 +111,7 @@ function App() {
         onBack={() => setView('list')}
         onUpdate={updateMember}
         onDelete={deleteMember}
+        onGoMerge={goMerge}
       />
     );
   }
