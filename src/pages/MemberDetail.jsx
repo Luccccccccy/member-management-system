@@ -362,10 +362,11 @@ export default function MemberDetail({ member, onBack, onUpdate, onDelete, onGoM
                                   }}
                                   className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
                                 />
-                                {/* Delete row */}
+                                {/* Delete row — hidden when only one row remains */}
                                 <button
                                   onClick={() => setIdFields(f => f.filter((_, i) => i !== idx))}
-                                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                                  disabled={idFields.length === 1}
+                                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 disabled:opacity-0 disabled:pointer-events-none"
                                 >
                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <polyline points="3 6 5 6 21 6"/>
