@@ -109,39 +109,62 @@ function DeleteConfirmModal({ memberName, onCancel, onConfirm }) {
   );
 }
 
+// ─── ID Field Helpers ─────────────────────────────────────────────────────────
+
+const ID_TYPE_OPTIONS = [
+  { label: '身分/居留證號', key: 'idNumber' },
+  { label: '病歷編號',      key: 'medicalRecordNumber' },
+  { label: '護照號碼',      key: 'passportNumber' },
+  { label: '會員編號',      key: 'memberNumber' },
+];
+
+function initIdFields(member) {
+  const fields = ID_TYPE_OPTIONS
+    .filter(opt => member[opt.key])
+    .map(opt => ({ type: opt.label, value: member[opt.key] }));
+  return fields.length > 0 ? fields : [{ type: '身分/居留證號', value: '' }];
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function MemberDetail({ member, onBack, onUpdate, onDelete, onGoMerge }) {
   const [activeNav, setActiveNav] = useState('overview');
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState({ ...member });
+  const [idFields, setIdFields] = useState(() => initIdFields(member));
 
-  // Sync editData when member prop changes (e.g. after save propagates back)
+  // Sync local state when member prop changes (after save propagates back)
   useEffect(() => {
     setEditData({ ...member });
+    setIdFields(initIdFields(member));
   }, [member]);
 
   const handleSave = () => {
-    onUpdate(member.id, editData);
+    // Convert dynamic idFields rows back to individual data keys
+    const idData = {};
+    ID_TYPE_OPTIONS.forEach(opt => { idData[opt.key] = ''; });
+    idFields.forEach(({ type, value }) => {
+      const opt = ID_TYPE_OPTIONS.find(o => o.label === type);
+      if (opt && value.trim()) idData[opt.key] = value.trim();
+    });
+    onUpdate(member.id, { ...editData, ...idData });
     setEditMode(false);
   };
 
   const handleCancel = () => {
     setEditMode(false);
     setEditData({ ...member });
+    setIdFields(initIdFields(member));
   };
 
+  // Non-ID fields rendered as simple inputs (vertically stacked)
   const editFields = [
-    { key: 'name',                label: '自定義姓名' },
-    { key: 'lineId',              label: 'LINE 名稱' },
-    { key: 'hisId',               label: 'HIS 名稱' },
-    { key: 'gender',              label: '性別' },
-    { key: 'birthday',            label: '生日' },
-    { key: 'phone',               label: '手機' },
-    { key: 'idNumber',            label: '身份證/居留證號' },
-    { key: 'medicalRecordNumber', label: '病歷編號' },
-    { key: 'passportNumber',      label: '護照號碼' },
-    { key: 'note',                label: '會員備註' },
+    { key: 'name',    label: '自定義姓名' },
+    { key: 'lineId',  label: 'LINE 名稱' },
+    { key: 'hisId',   label: 'HIS 名稱' },
+    { key: 'gender',  label: '性別' },
+    { key: 'birthday', label: '生日' },
+    { key: 'phone',   label: '手機' },
   ];
 
   return (
@@ -280,18 +303,95 @@ export default function MemberDetail({ member, onBack, onUpdate, onDelete, onGoM
                 </div>
 
                 {editMode ? (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-4">
+                    {/* Non-ID fields — vertical stack */}
                     {editFields.map(({ key, label }) => (
                       <div key={key}>
-                        <label className="block text-xs text-gray-500 mb-1">{label}</label>
+                        <label className="block text-xs text-gray-500 mb-1.5">{label}</label>
                         <input
                           type="text"
                           value={editData[key] || ''}
                           onChange={e => setEditData(prev => ({ ...prev, [key]: e.target.value }))}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
                         />
                       </div>
                     ))}
+
+                    {/* Dynamic 識別號 section */}
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-2">
+                        識別號 <span className="text-red-500">*</span>
+                      </label>
+                      <div className="flex flex-col gap-2">
+                        {idFields.map((field, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            {/* Type dropdown */}
+                            <div className="relative flex-shrink-0">
+                              <select
+                                value={field.type}
+                                onChange={e => {
+                                  const next = [...idFields];
+                                  next[idx] = { ...next[idx], type: e.target.value };
+                                  setIdFields(next);
+                                }}
+                                className="appearance-none pl-3 pr-8 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
+                              >
+                                {ID_TYPE_OPTIONS.map(opt => (
+                                  <option key={opt.label} value={opt.label}>{opt.label}</option>
+                                ))}
+                              </select>
+                              <svg className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5">
+                                <polyline points="6 9 12 15 18 9"/>
+                              </svg>
+                            </div>
+                            {/* Value input */}
+                            <input
+                              type="text"
+                              value={field.value}
+                              onChange={e => {
+                                const next = [...idFields];
+                                next[idx] = { ...next[idx], value: e.target.value };
+                                setIdFields(next);
+                              }}
+                              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
+                            />
+                            {/* Delete row */}
+                            <button
+                              onClick={() => setIdFields(f => f.filter((_, i) => i !== idx))}
+                              className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                                <path d="M10 11v6"/><path d="M14 11v6"/>
+                                <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                        {/* Add row button */}
+                        <button
+                          onClick={() => setIdFields(f => [...f, { type: '身分/居留證號', value: '' }])}
+                          className="flex items-center gap-1.5 text-sm text-blue-500 hover:text-blue-600 py-0.5 w-fit transition-colors"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                          </svg>
+                          新增其他識別欄位
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Note field */}
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1.5">會員備註</label>
+                      <input
+                        type="text"
+                        value={editData.note || ''}
+                        onChange={e => setEditData(prev => ({ ...prev, note: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div>
