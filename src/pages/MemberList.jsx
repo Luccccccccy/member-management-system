@@ -381,8 +381,8 @@ export default function MemberList({ members, onSelectMember, onGoMerge, onAddMe
             發送單發訊息
           </button>
 
-          {/* Merge — only shown when 2+ selected */}
-          {selected.length >= 2 && (
+          {/* Merge — shown when 1+ selected */}
+          {selected.length >= 1 && (
             <>
               <div className="w-px h-6 bg-gray-200 mx-1" />
               <button
